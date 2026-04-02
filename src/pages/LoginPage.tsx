@@ -203,7 +203,7 @@ export function LoginPage() {
           </Box>
 
           <Typography align="center" sx={{ mt: 2.5, color: 'text.secondary', fontSize: '0.85rem' }}>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Box
               component="span"
               onClick={() => navigate('/signup')}

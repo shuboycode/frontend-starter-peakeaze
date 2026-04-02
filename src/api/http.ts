@@ -8,6 +8,7 @@ type Json =
 
 export class ApiError extends Error {
   status: number;
+
   data: Json | null;
 
   constructor(message: string, status: number, data: Json | null) {

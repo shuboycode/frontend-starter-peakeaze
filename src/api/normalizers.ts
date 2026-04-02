@@ -26,20 +26,19 @@ function coerceInvoice(raw: unknown): ApiInvoice | null {
   const statusRaw = obj.status;
   const createdAt = obj.createdAt ?? obj.created_at ?? obj.creationDate;
 
-  const id = typeof idRaw === 'string' ? idRaw : typeof idRaw === 'number' ? String(idRaw) : null;
-  const invoiceNumber =
-    typeof invoiceNumberRaw === 'string'
-      ? invoiceNumberRaw
-      : typeof invoiceNumberRaw === 'number'
-        ? String(invoiceNumberRaw)
-        : null;
+  let id: string | null;
+  if (typeof idRaw === 'string') { id = idRaw; }
+  else if (typeof idRaw === 'number') { id = String(idRaw); }
+  else { id = null; }
+  let invoiceNumber: string | null;
+  if (typeof invoiceNumberRaw === 'string') { invoiceNumber = invoiceNumberRaw; }
+  else if (typeof invoiceNumberRaw === 'number') { invoiceNumber = String(invoiceNumberRaw); }
+  else { invoiceNumber = null; }
 
-  const amount =
-    typeof amountRaw === 'number'
-      ? amountRaw
-      : typeof amountRaw === 'string' && amountRaw.trim() !== ''
-        ? Number.parseFloat(amountRaw)
-        : NaN;
+  let amount: number;
+  if (typeof amountRaw === 'number') { amount = amountRaw; }
+  else if (typeof amountRaw === 'string' && amountRaw.trim() !== '') { amount = Number.parseFloat(amountRaw); }
+  else { amount = NaN; }
 
   const status = typeof statusRaw === 'string' ? statusRaw : null;
 
@@ -98,23 +97,17 @@ export function normalizeInvoicesListResponse(
     .map((x) => coerceInvoice(x))
     .filter((x): x is ApiInvoice => x !== null);
 
-  const page =
-    typeof root.page === 'number'
-      ? root.page
-      : isRecord(root.meta)
-        ? toNumber((root.meta as Record<string, unknown>).page, 1)
-        : isRecord(root.pagination)
-          ? toNumber((root.pagination as Record<string, unknown>).page, 1)
-          : 1;
+  let page: number;
+  if (typeof root.page === 'number') { page = root.page; }
+  else if (isRecord(root.meta)) { page = toNumber((root.meta as Record<string, unknown>).page, 1); }
+  else if (isRecord(root.pagination)) { page = toNumber((root.pagination as Record<string, unknown>).page, 1); }
+  else { page = 1; }
 
-  const limit =
-    typeof root.limit === 'number'
-      ? root.limit
-      : isRecord(root.meta)
-        ? toNumber((root.meta as Record<string, unknown>).limit, 10)
-        : isRecord(root.pagination)
-          ? toNumber((root.pagination as Record<string, unknown>).limit, 10)
-          : 10;
+  let limit: number;
+  if (typeof root.limit === 'number') { limit = root.limit; }
+  else if (isRecord(root.meta)) { limit = toNumber((root.meta as Record<string, unknown>).limit, 10); }
+  else if (isRecord(root.pagination)) { limit = toNumber((root.pagination as Record<string, unknown>).limit, 10); }
+  else { limit = 10; }
 
   const totalPagesFromRoot = typeof root.totalPages === 'number' ? root.totalPages : undefined;
   const totalCountFromRoot = typeof root.totalCount === 'number' ? root.totalCount : undefined;

@@ -36,14 +36,17 @@ type EditDialogProps = {
 };
 
 export function InvoiceFormDialog(props: CreateDialogProps | EditDialogProps) {
-  const { open, onClose, role } = props;
+  const { open, onClose, role, mode } = props;
+  const existingInvoice = mode === 'edit' ? (props as EditDialogProps).invoice : null;
+  const onCreated = mode === 'create' ? (props as CreateDialogProps).onCreated : null;
+  const onUpdated = mode === 'edit' ? (props as EditDialogProps).onUpdated : null;
 
   const [customerName, setCustomerName] = useState<string>('');
   const [amountStr, setAmountStr] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  const isCreate = props.mode === 'create';
+  const isCreate = mode === 'create';
 
   useEffect(() => {
     if (!open) return;
@@ -55,9 +58,9 @@ export function InvoiceFormDialog(props: CreateDialogProps | EditDialogProps) {
       return;
     }
 
-    setCustomerName(props.invoice.customerName);
-    setAmountStr(String(props.invoice.amount));
-  }, [open, isCreate, props]);
+    setCustomerName(existingInvoice?.customerName ?? '');
+    setAmountStr(String(existingInvoice?.amount ?? ''));
+  }, [open, isCreate, existingInvoice]);
 
   const permitted = isCreate ? canCreate(role) : canEdit(role);
   const submitLabel = isCreate ? 'Create' : 'Save changes';
@@ -94,13 +97,13 @@ export function InvoiceFormDialog(props: CreateDialogProps | EditDialogProps) {
     try {
       if (isCreate) {
         const created = await createInvoice({ customerName: customerName.trim(), amount });
-        props.onCreated(created);
+        onCreated?.(created);
       } else {
-        const updated = await updateInvoice(props.invoice.id, {
+        const updated = await updateInvoice(existingInvoice!.id, {
           customerName: customerName.trim(),
           amount
         });
-        props.onUpdated(updated);
+        onUpdated?.(updated);
       }
       onClose();
     } catch (e2) {
@@ -130,7 +133,7 @@ export function InvoiceFormDialog(props: CreateDialogProps | EditDialogProps) {
         <DialogContent sx={{ pt: 1 }}>
           {permitted ? null : (
             <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-              You don't have permission to perform this action.
+              You don&apos;t have permission to perform this action.
             </Alert>
           )}
 

@@ -150,7 +150,7 @@ export function SignupPage() {
         <Box sx={{ width: '100%', maxWidth: 360 }}>
           <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>Create account</Typography>
           <Typography color="text.secondary" sx={{ mb: 3, fontSize: '0.875rem' }}>
-            Get started — it's free
+            Get started — it&apos;s free
           </Typography>
 
           <Box component="form" onSubmit={onSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>

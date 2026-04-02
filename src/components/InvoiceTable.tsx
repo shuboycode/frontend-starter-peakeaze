@@ -35,7 +35,7 @@ function useStatusStyle() {
   };
 }
 
-export const InvoiceTable = memo(function InvoiceTable({
+function InvoiceTableBase({
   invoices,
   onView
 }: {
@@ -90,5 +90,7 @@ export const InvoiceTable = memo(function InvoiceTable({
       </Table>
     </TableContainer>
   );
-});
+}
+
+export const InvoiceTable = memo(InvoiceTableBase);
 

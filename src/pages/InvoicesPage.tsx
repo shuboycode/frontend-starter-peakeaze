@@ -43,8 +43,8 @@ function TableSkeleton() {
   return (
     <Card sx={{ overflow: 'hidden' }}>
       <CardContent sx={{ p: 0 }}>
-        {[...Array(5)].map((_, i) => (
-          <Box key={i} sx={{ display: 'flex', gap: 2, px: 3, py: 1.5, borderBottom: '1px solid #F3F4F6' }}>
+        {['sk-a', 'sk-b', 'sk-c', 'sk-d', 'sk-e'].map((key) => (
+          <Box key={key} sx={{ display: 'flex', gap: 2, px: 3, py: 1.5, borderBottom: '1px solid #F3F4F6' }}>
             <Skeleton variant="rounded" width={64} height={24} sx={{ borderRadius: 8 }} />
             <Skeleton variant="text" width="16%" />
             <Skeleton variant="text" width="22%" />
@@ -131,13 +131,14 @@ export function InvoicesPage() {
         if (e instanceof ApiError && e.status === 401) { logout(); navigate('/login', { replace: true }); return; }
         setError(e instanceof Error ? e.message : 'Failed to load invoices.');
       } finally {
-        if (cancelled) return;
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
-    void run();
+    run().catch(() => undefined);
     return () => { cancelled = true; };
-  }, [page, limit, search, status]);
+  }, [page, limit, search, status, logout, navigate]);
 
   const canUserCreate = canCreate(role);
   const onViewInvoice = useCallback((id: string) => navigate(`/invoices/${id}`), [navigate]);
@@ -229,15 +230,12 @@ export function InvoicesPage() {
         ) : null}
 
         {/* Content */}
-        {loading ? (
-          <TableSkeleton />
-        ) : sortedInvoices.length === 0 ? (
-          <EmptyState />
-        ) : isMobile ? (
-          <InvoiceCards invoices={sortedInvoices} onView={onViewInvoice} />
-        ) : (
-          <InvoiceTable invoices={sortedInvoices} onView={onViewInvoice} />
-        )}
+        {(() => {
+          if (loading) return <TableSkeleton />;
+          if (sortedInvoices.length === 0) return <EmptyState />;
+          if (isMobile) return <InvoiceCards invoices={sortedInvoices} onView={onViewInvoice} />;
+          return <InvoiceTable invoices={sortedInvoices} onView={onViewInvoice} />;
+        })()}
 
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </Stack>

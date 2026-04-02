@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { login as loginApi, me as meApi, signup as signupApi, type Role } from '../api/authApi';
 
@@ -54,7 +55,7 @@ function extractRole(raw: unknown): Role | null {
     return rolesArray[0] as Role;
   }
 
-  const user = obj.user;
+  const { user } = obj;
   if (user && typeof user === 'object') {
     const maybeRole = (user as Record<string, unknown>).role;
     if (isValidRole(maybeRole)) return maybeRole;
@@ -203,8 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Only load session if we already have a token stored.
     const currentToken = getStoredToken();
     if (!currentToken) return;
-    void reloadMe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    reloadMe().catch(() => undefined);
   }, []);
 
   const value = useMemo<AuthContextValue>(

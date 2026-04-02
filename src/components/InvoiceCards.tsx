@@ -26,7 +26,7 @@ function useStatusColors() {
   };
 }
 
-export const InvoiceCards = memo(function InvoiceCards({
+function InvoiceCardsBase({
   invoices,
   onView
 }: {
@@ -81,5 +81,7 @@ export const InvoiceCards = memo(function InvoiceCards({
       ))}
     </Stack>
   );
-});
+}
+
+export const InvoiceCards = memo(InvoiceCardsBase);
 

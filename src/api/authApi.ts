@@ -48,7 +48,7 @@ export async function login(payload: { email: string; password: string }) {
     false
   );
 
-  const token = data.token;
+  const { token } = data;
   if (!token) throw new Error('Login failed: token missing.');
   return { token };
 }

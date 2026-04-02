@@ -68,17 +68,18 @@ export function InvoiceDetailsPage() {
         }
         setError(e instanceof Error ? e.message : 'Failed to load invoice.');
       } finally {
-        if (cancelled) return;
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
-    void run();
+    run().catch(() => undefined);
 
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, logout, navigate]);
 
   const canUpdate = canEdit(role);
   const canRemove = canDelete(role);
@@ -183,7 +184,7 @@ export function InvoiceDetailsPage() {
         <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>
       ) : null}
 
-      {loading ? (
+      {loading && (
         <Card>
           <CardContent sx={{ p: 3 }}>
             <Stack spacing={2}>
@@ -197,7 +198,8 @@ export function InvoiceDetailsPage() {
             </Stack>
           </CardContent>
         </Card>
-      ) : invoice ? (
+      )}
+      {!loading && invoice && (
         <Card sx={{ overflow: 'hidden' }}>
           {/* Hero amount section */}
           <Box sx={{
@@ -302,7 +304,7 @@ export function InvoiceDetailsPage() {
             ) : null}
           </Stack>
         </Card>
-      ) : null}
+      )}
 
       {invoice ? (
         <InvoiceFormDialog
