@@ -32,17 +32,17 @@ function Navbar() {
 
   return (
     <AppBar position="sticky" elevation={0} sx={{borderRadius: "0"}}>
-      <Toolbar sx={{ px: { xs: 2, sm: 4 }, minHeight: '64px !important', gap: 2 }}>
+      <Toolbar sx={{ px: { xs: 1.5, sm: 4 }, minHeight: '64px !important', gap: { xs: 1, sm: 2 } }}>
         {/* Brand */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
           <Box sx={{
-            width: 32, height: 32, borderRadius: '9px',
+            width: { xs: 26, sm: 32 }, height: { xs: 26, sm: 32 }, borderRadius: '9px',
             background: 'linear-gradient(135deg, #5C4EE8 0%, #4538C7 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <ReceiptLongOutlinedIcon sx={{ fontSize: 17, color: '#fff' }} />
+            <ReceiptLongOutlinedIcon sx={{ fontSize: { xs: 14, sm: 17 }, color: '#fff' }} />
           </Box>
-          <Typography sx={{ fontWeight: 700, fontSize: '1rem', letterSpacing: 0.3, color: '#0F0F1A' }}>
+          <Typography sx={{ fontWeight: 700, fontSize: { xs: '0.8rem', sm: '1rem' }, letterSpacing: 0.3, color: '#0F0F1A' }}>
             PeakEaze
           </Typography>
         </Box>
@@ -65,7 +65,7 @@ function Navbar() {
         ) : null}
 
         {/* User avatar */}
-        <Avatar sx={{ width: 34, height: 34, bgcolor: '#5C4EE8', fontSize: '0.75rem', fontWeight: 700 }}>
+        <Avatar sx={{ width: { xs: 30, sm: 34 }, height: { xs: 30, sm: 34 }, bgcolor: '#5C4EE8', fontSize: '0.75rem', fontWeight: 700 }}>
           {initials}
         </Avatar>
 
