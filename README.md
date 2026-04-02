@@ -2,7 +2,7 @@
 
 A production-ready invoice management SPA built with React 18, TypeScript, and MUI v5. Features JWT authentication with auto-refresh, fine-grained role-based access control, full invoice CRUD, and enforced test coverage thresholds.
 
-**Live Demo:** [https://frontend-starter-peakeaze.vercel.app](https://frontend-starter-peakeaze.vercel.app)
+**Live Demo:** [https://d1xh5xlie1krnj.cloudfront.net/](https://d1xh5xlie1krnj.cloudfront.net/)
 
 ---
 
