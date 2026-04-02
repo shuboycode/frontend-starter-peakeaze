@@ -10,8 +10,8 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 
 describe('Root', () => {
-  it('renders the invoice management heading', () => {
+  it('renders the app brand name', () => {
     renderWithTheme(<Root />);
-    expect(screen.getByText(/Invoice Management/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/PeakEaze/i).length).toBeGreaterThan(0);
   });
 });

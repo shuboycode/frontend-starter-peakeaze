@@ -1,14 +1,12 @@
-import { CssBaseline, ThemeProvider } from '@mui/material';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Root } from './Root';
-import { theme } from './theme';
+import { ThemeModeProvider } from './context/ThemeContext';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeModeProvider>
       <Root />
-    </ThemeProvider>
+    </ThemeModeProvider>
   </React.StrictMode>
 );
