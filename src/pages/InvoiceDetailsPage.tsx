@@ -53,11 +53,8 @@ export function InvoiceDetailsPage() {
     placeholderData: () => {
       // Instantly show invoice data already in the list cache
       const caches = queryClient.getQueriesData<{ invoices: Invoice[] }>({ queryKey: ['invoices'] });
-      for (const [, data] of caches) {
-        const found = data?.invoices?.find((inv) => inv.id === id);
-        if (found) return found;
-      }
-      return undefined;
+      const cachedEntry = caches.find(([, data]) => data?.invoices?.some((inv) => inv.id === id));
+      return cachedEntry?.[1]?.invoices?.find((inv) => inv.id === id);
     },
     throwOnError: (e) => {
       if (e instanceof ApiError && e.status === 401) {
@@ -68,12 +65,17 @@ export function InvoiceDetailsPage() {
     },
   });
 
-  const error = updateError ?? (fetchError instanceof Error ? fetchError.message : fetchError ? 'Failed to load invoice.' : null);
+  function resolveFetchError() {
+    if (!fetchError) return null;
+    if (fetchError instanceof Error) return fetchError.message;
+    return 'Failed to load invoice.';
+  }
+  const error = updateError ?? resolveFetchError();
 
   // Sync selectedStatus when invoice data arrives
   useEffect(() => {
     if (invoice) setSelectedStatus(invoice.status);
-  }, [invoice?.status]);
+  }, [invoice]);
 
   const canUpdate = canEdit(role);
   const canRemove = canDelete(role);
@@ -100,7 +102,7 @@ export function InvoiceDetailsPage() {
     try {
       const updated = await updateInvoice(invoice.id, { status: selectedStatus });
       queryClient.setQueryData(['invoice', id], updated);
-      void queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] }).catch(() => undefined);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         logout();
@@ -309,7 +311,7 @@ export function InvoiceDetailsPage() {
           onClose={() => setEditOpen(false)}
           onUpdated={(updated) => {
             queryClient.setQueryData(['invoice', id], updated);
-            void queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['invoices'] }).catch(() => undefined);
           }}
         />
       ) : null}
@@ -348,7 +350,7 @@ export function InvoiceDetailsPage() {
               try {
                 await deleteInvoice(invoice.id);
                 queryClient.removeQueries({ queryKey: ['invoice', id] });
-                void queryClient.invalidateQueries({ queryKey: ['invoices'] });
+                queryClient.invalidateQueries({ queryKey: ['invoices'] }).catch(() => undefined);
                 setDeleteOpen(false);
                 navigate('/invoices', { replace: true });
               } catch (e) {

@@ -124,17 +124,23 @@ export function InvoicesPage() {
   useEffect(() => {
     const totalPages = data?.totalPages ?? 1;
     if (page < totalPages) {
-      void queryClient.prefetchQuery({
+      queryClient.prefetchQuery({
         queryKey: ['invoices', { page: page + 1, limit, search: debouncedSearch, status }],
         queryFn: () => listInvoices({ page: page + 1, limit, search: debouncedSearch, status }),
       });
     }
   }, [page, limit, debouncedSearch, status, data?.totalPages, queryClient]);
 
-  const invoices = data?.invoices ?? [];
+  const invoices = useMemo(() => data?.invoices ?? [], [data?.invoices]);
   const totalPages = data?.totalPages ?? 1;
   const loading = isLoading;
-  const error = queryError instanceof Error ? queryError.message : queryError ? 'Failed to load invoices.' : null;
+
+  function resolveQueryError() {
+    if (!queryError) return null;
+    if (queryError instanceof Error) return queryError.message;
+    return 'Failed to load invoices.';
+  }
+  const error = resolveQueryError();
 
   const sortedInvoices = useMemo(() => {
     const safe = [...invoices];
@@ -259,7 +265,7 @@ export function InvoicesPage() {
         role={role}
         onClose={() => setCreateOpen(false)}
         onCreated={(created) => {
-          void queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          queryClient.invalidateQueries({ queryKey: ['invoices'] }).catch(() => undefined);
           navigate(`/invoices/${created.id}`, { replace: true });
         }}
       />
