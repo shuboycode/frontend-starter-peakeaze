@@ -24,7 +24,10 @@ describe('main', () => {
     expect(renderMock).toHaveBeenCalledTimes(1);
     const [app] = renderMock.mock.calls[0];
     expect(app.type).toBe(React.StrictMode);
-    const themeProvider = app.props.children;
+    // StrictMode > QueryClientProvider > ThemeModeProvider > Root
+    const queryProvider = app.props.children;
+    expect(queryProvider.type.toString()).toContain('client');
+    const themeProvider = queryProvider.props.children;
     expect(themeProvider.type.toString()).toContain('ThemeProvider');
     const children = Array.isArray(themeProvider.props.children)
       ? themeProvider.props.children

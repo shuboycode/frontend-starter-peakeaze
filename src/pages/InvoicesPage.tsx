@@ -17,9 +17,10 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/SearchOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { listInvoices, type Invoice, type InvoiceStatus } from '../api/invoicesApi';
+import { listInvoices, type InvoiceStatus } from '../api/invoicesApi';
 import { ApiError } from '../api/http';
 import { statusSortIndex, canCreate } from '../rbac/invoicePermissions';
 import { InvoiceTable } from '../components/InvoiceTable';
@@ -86,18 +87,54 @@ export function InvoicesPage() {
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width:600px)');
   const { role, logout } = useAuth();
+  const queryClient = useQueryClient();
 
   const [page, setPage] = useState<number>(1);
-  const [limit] = useState<number>(10);
+  const limit = 10;
 
   const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [status, setStatus] = useState<InvoiceStatus | ''>('');
-
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const queryKey = ['invoices', { page, limit, search: debouncedSearch, status }] as const;
+
+  const { data, isLoading, error: queryError } = useQuery({
+    queryKey,
+    queryFn: () => listInvoices({ page, limit, search: debouncedSearch, status }),
+    placeholderData: (prev) => prev, // keep showing old data while fetching new page
+    throwOnError: (e) => {
+      if (e instanceof ApiError && e.status === 401) {
+        logout();
+        navigate('/login', { replace: true });
+      }
+      return false;
+    },
+  });
+
+  // Prefetch next page so navigation feels instant
+  useEffect(() => {
+    const totalPages = data?.totalPages ?? 1;
+    if (page < totalPages) {
+      void queryClient.prefetchQuery({
+        queryKey: ['invoices', { page: page + 1, limit, search: debouncedSearch, status }],
+        queryFn: () => listInvoices({ page: page + 1, limit, search: debouncedSearch, status }),
+      });
+    }
+  }, [page, limit, debouncedSearch, status, data?.totalPages, queryClient]);
+
+  const invoices = data?.invoices ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const loading = isLoading;
+  const error = queryError instanceof Error ? queryError.message : queryError ? 'Failed to load invoices.' : null;
 
   const sortedInvoices = useMemo(() => {
     const safe = [...invoices];
@@ -115,30 +152,6 @@ export function InvoicesPage() {
   const totalAmount = useMemo(() => invoices.reduce((s, inv) => s + inv.amount, 0), [invoices]);
   const draftCount = useMemo(() => invoices.filter((i) => i.status === 'Draft').length, [invoices]);
   const paidCount = useMemo(() => invoices.filter((i) => i.status === 'Paid').length, [invoices]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await listInvoices({ page, limit, search, status });
-        if (cancelled) return;
-        setInvoices(res.invoices);
-        setTotalPages(res.totalPages);
-      } catch (e) {
-        if (cancelled) return;
-        if (e instanceof ApiError && e.status === 401) { logout(); navigate('/login', { replace: true }); return; }
-        setError(e instanceof Error ? e.message : 'Failed to load invoices.');
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-    run().catch(() => undefined);
-    return () => { cancelled = true; };
-  }, [page, limit, search, status, logout, navigate]);
 
   const canUserCreate = canCreate(role);
   const onViewInvoice = useCallback((id: string) => navigate(`/invoices/${id}`), [navigate]);
@@ -194,7 +207,7 @@ export function InvoicesPage() {
               <TextField
                 placeholder="Search by customer name…"
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                onChange={(e) => setSearch(e.target.value)}
                 fullWidth={isMobile}
                 size="small"
                 sx={{ flex: isMobile ? undefined : 1 }}
@@ -245,7 +258,10 @@ export function InvoicesPage() {
         open={createOpen}
         role={role}
         onClose={() => setCreateOpen(false)}
-        onCreated={(created) => navigate(`/invoices/${created.id}`, { replace: true })}
+        onCreated={(created) => {
+          void queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          navigate(`/invoices/${created.id}`, { replace: true });
+        }}
       />
     </Box>
   );

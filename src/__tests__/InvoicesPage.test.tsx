@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { theme } from '../theme';
 import { InvoicesPage } from '../pages/InvoicesPage';
 import * as AuthContext from '../auth/AuthContext';
@@ -39,12 +40,17 @@ function makeAuthValue(role: 'Admin' | 'Accountant' | 'Viewer' | null = 'Admin')
 
 function renderInvoicesPage(role: 'Admin' | 'Accountant' | 'Viewer' | null = 'Admin') {
   vi.spyOn(AuthContext, 'useAuth').mockReturnValue(makeAuthValue(role));
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   render(
-    <MemoryRouter>
-      <ThemeProvider theme={theme}>
-        <InvoicesPage />
-      </ThemeProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <InvoicesPage />
+        </ThemeProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

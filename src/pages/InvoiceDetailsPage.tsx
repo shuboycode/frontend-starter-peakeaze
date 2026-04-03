@@ -22,6 +22,7 @@ import {
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { deleteInvoice, getInvoiceById, updateInvoice, type Invoice } from '../api/invoicesApi';
@@ -37,49 +38,42 @@ export function InvoiceDetailsPage() {
   const { palette: { mode } } = useTheme();
   const isDark = mode === 'dark';
 
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [statusUpdating, setStatusUpdating] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<Invoice['status'] | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState<boolean>(false);
   const [deleteOpen, setDeleteOpen] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      if (!id) return;
-      setLoading(true);
-      setError(null);
-
-      try {
-        const res = await getInvoiceById(id);
-        if (cancelled) return;
-        setInvoice(res);
-        setSelectedStatus(res.status);
-      } catch (e) {
-        if (cancelled) return;
-        if (e instanceof ApiError && e.status === 401) {
-          logout();
-          navigate('/login', { replace: true });
-          return;
-        }
-        setError(e instanceof Error ? e.message : 'Failed to load invoice.');
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  const { data: invoice, isLoading: loading, error: fetchError } = useQuery({
+    queryKey: ['invoice', id],
+    queryFn: () => getInvoiceById(id!),
+    enabled: !!id,
+    placeholderData: () => {
+      // Instantly show invoice data already in the list cache
+      const caches = queryClient.getQueriesData<{ invoices: Invoice[] }>({ queryKey: ['invoices'] });
+      for (const [, data] of caches) {
+        const found = data?.invoices?.find((inv) => inv.id === id);
+        if (found) return found;
       }
-    }
+      return undefined;
+    },
+    throwOnError: (e) => {
+      if (e instanceof ApiError && e.status === 401) {
+        logout();
+        navigate('/login', { replace: true });
+      }
+      return false;
+    },
+  });
 
-    run().catch(() => undefined);
+  const error = updateError ?? (fetchError instanceof Error ? fetchError.message : fetchError ? 'Failed to load invoice.' : null);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [id, logout, navigate]);
+  // Sync selectedStatus when invoice data arrives
+  useEffect(() => {
+    if (invoice) setSelectedStatus(invoice.status);
+  }, [invoice?.status]);
 
   const canUpdate = canEdit(role);
   const canRemove = canDelete(role);
@@ -102,18 +96,18 @@ export function InvoiceDetailsPage() {
     if (!canUpdate) return;
 
     setStatusUpdating(true);
-    setError(null);
+    setUpdateError(null);
     try {
       const updated = await updateInvoice(invoice.id, { status: selectedStatus });
-      setInvoice(updated);
-      setSelectedStatus(updated.status);
+      queryClient.setQueryData(['invoice', id], updated);
+      void queryClient.invalidateQueries({ queryKey: ['invoices'] });
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         logout();
         navigate('/login', { replace: true });
         return;
       }
-      setError(e instanceof Error ? e.message : 'Failed to update status.');
+      setUpdateError(e instanceof Error ? e.message : 'Failed to update status.');
     } finally {
       setStatusUpdating(false);
     }
@@ -314,8 +308,8 @@ export function InvoiceDetailsPage() {
           invoice={invoice}
           onClose={() => setEditOpen(false)}
           onUpdated={(updated) => {
-            setInvoice(updated);
-            setSelectedStatus(updated.status);
+            queryClient.setQueryData(['invoice', id], updated);
+            void queryClient.invalidateQueries({ queryKey: ['invoices'] });
           }}
         />
       ) : null}
@@ -353,6 +347,8 @@ export function InvoiceDetailsPage() {
               setStatusUpdating(true);
               try {
                 await deleteInvoice(invoice.id);
+                queryClient.removeQueries({ queryKey: ['invoice', id] });
+                void queryClient.invalidateQueries({ queryKey: ['invoices'] });
                 setDeleteOpen(false);
                 navigate('/invoices', { replace: true });
               } catch (e) {
